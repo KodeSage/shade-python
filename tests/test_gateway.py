@@ -1,5 +1,5 @@
-import pytest
 from shade import Gateway
+
 
 def test_gateway_initialization():
     gateway = Gateway()
