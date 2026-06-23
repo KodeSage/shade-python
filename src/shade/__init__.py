@@ -1,4 +1,11 @@
 from .errors import HTTPError, RateLimitError, ShadeError
+from .errors import (
+    AuthenticationError,
+    InvalidRequestError,
+    NetworkError,
+    NotFoundError,
+    ShadeError,
+)
 from .gateway import Gateway
 from .http import AsyncHTTPClient, SyncHTTPClient
 
@@ -11,4 +18,11 @@ __all__ = [
     "ShadeError",
     "HTTPError",
     "RateLimitError",
+]
+    "AuthenticationError",
+    "Gateway",
+    "InvalidRequestError",
+    "NetworkError",
+    "NotFoundError",
+    "ShadeError",
 ]
