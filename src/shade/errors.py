@@ -1,3 +1,6 @@
+"""
+Shade SDK exceptions.
+"""
 from __future__ import annotations
 
 import json
@@ -22,6 +25,48 @@ class ShadeError(Exception):
         if self.status_code is None:
             return self.message
         return f"{self.message} (status code: {self.status_code})"
+
+
+class HTTPError(ShadeError):
+    """Raised for non-2xx responses that are not handled by a more specific error."""
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int,
+        response_body: Optional[str] = None,
+    ) -> None:
+        super().__init__(message, status_code=status_code, response_body=response_body)
+
+
+class RateLimitError(HTTPError):
+    """
+    Raised when the API returns HTTP 429 Too Many Requests and either:
+    - auto-retry is disabled, or
+    - ``max_retries`` has been exhausted.
+
+    Attributes
+    ----------
+    retry_after : int | None
+        Seconds to wait before the next attempt, parsed from the
+        ``Retry-After`` response header.  ``None`` if the header was absent.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        retry_after: Optional[int] = None,
+        status_code: int = 429,
+        response_body: Optional[str] = None,
+    ) -> None:
+        super().__init__(message, status_code=status_code, response_body=response_body)
+        self.retry_after = retry_after
+
+    def __str__(self) -> str:  # pragma: no cover
+        base = super().__str__()
+        if self.retry_after is not None:
+            return f"{base} (retry after {self.retry_after}s)"
+        return base
 
 
 class AuthenticationError(ShadeError):
