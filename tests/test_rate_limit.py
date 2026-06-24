@@ -161,7 +161,8 @@ class TestSyncHTTPClientRateLimit:
 
         def fake_execute(req):
             nonlocal idx
-            r = responses[idx]; idx += 1
+            r = responses[idx]
+            idx += 1
             return r
 
         with patch.object(client, "_execute", side_effect=fake_execute), \
@@ -183,7 +184,8 @@ class TestSyncHTTPClientRateLimit:
 
         def fake_execute(req):
             nonlocal idx
-            r = responses[idx]; idx += 1
+            r = responses[idx]
+            idx += 1
             return r
 
         sleep_calls: List[float] = []
@@ -206,7 +208,8 @@ class TestSyncHTTPClientRateLimit:
 
         def fake_execute(req):
             nonlocal idx
-            r = responses[idx]; idx += 1
+            r = responses[idx]
+            idx += 1
             return r
 
         with patch.object(client, "_execute", side_effect=fake_execute), \
@@ -298,7 +301,8 @@ class TestAsyncHTTPClientRateLimit:
 
             async def fake_request(*args, **kwargs):
                 nonlocal idx
-                status, hdrs, body = responses[idx]; idx += 1
+                status, hdrs, body = responses[idx]
+                idx += 1
                 mock_resp = AsyncMock()
                 mock_resp.status = status
                 mock_resp.headers = hdrs
@@ -377,7 +381,8 @@ class TestAsyncHTTPClientRateLimit:
 
             async def fake_request(*args, **kwargs):
                 nonlocal idx
-                status, hdrs, body = responses[idx]; idx += 1
+                status, hdrs, body = responses[idx]
+                idx += 1
                 mock_resp = AsyncMock()
                 mock_resp.status = status
                 mock_resp.headers = hdrs

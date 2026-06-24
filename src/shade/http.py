@@ -28,6 +28,14 @@ _BASE_BACKOFF: float = 1.0   # seconds for exponential back-off base
 _MAX_BACKOFF: float = 60.0   # cap individual wait at 60 s
 
 
+def _validate_base_url(url: str) -> None:
+    """Raise ValueError if *url* is not an absolute http/https URL."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(
+            f"base_url must use http:// or https://, got: {url!r}"
+        )
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -127,6 +135,7 @@ class SyncHTTPClient:
         max_retries: int = DEFAULT_MAX_RETRIES,
         timeout: float = 30.0,
     ) -> None:
+        _validate_base_url(base_url)
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.max_retries = max_retries
@@ -208,6 +217,7 @@ class AsyncHTTPClient:
         max_retries: int = DEFAULT_MAX_RETRIES,
         timeout: float = 30.0,
     ) -> None:
+        _validate_base_url(base_url)
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.max_retries = max_retries
@@ -259,18 +269,18 @@ class AsyncHTTPClient:
         ) as session:
             while True:
                 url = f"{url_base}/{path.lstrip('/')}"
-                async with session.request(
+                resp = await session.request(
                     method.upper(),
                     url,
                     json=payload,
                     headers=headers,
-                ) as resp:
-                    body = await resp.read()
-                    wait = _raise_for_status(
-                        resp.status, resp.headers, body, attempt, self.max_retries
-                    )
-                    if wait is None:
-                        return json.loads(body) if body else {}
-                    # 429 — non-blocking sleep
-                    await asyncio.sleep(wait)
-                    attempt += 1
+                )
+                body = await resp.read()
+                wait = _raise_for_status(
+                    resp.status, resp.headers, body, attempt, self.max_retries
+                )
+                if wait is None:
+                    return json.loads(body) if body else {}
+                # 429 — non-blocking sleep
+                await asyncio.sleep(wait)
+                attempt += 1

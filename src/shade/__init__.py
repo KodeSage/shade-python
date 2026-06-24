@@ -13,16 +13,14 @@ from .errors import (
 __version__ = "0.1.0"
 
 __all__ = [
-    "Gateway",
-    "SyncHTTPClient",
     "AsyncHTTPClient",
-    "ShadeError",
-    "HTTPError",
-    "RateLimitError",
     "AuthenticationError",
     "Gateway",
+    "HTTPError",
     "InvalidRequestError",
     "NetworkError",
     "NotFoundError",
+    "RateLimitError",
     "ShadeError",
+    "SyncHTTPClient",
 ]

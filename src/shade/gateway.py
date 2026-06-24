@@ -31,6 +31,8 @@ class Gateway:
         max_retries: int = DEFAULT_MAX_RETRIES,
         timeout: float = 30.0,
     ) -> None:
+        if not api_key:
+            raise ValueError("api_key must be a non-empty string")
         self.api_key = api_key
         self._base_url = base_url or self._DEFAULT_BASE_URL
         self._http = SyncHTTPClient(
