@@ -283,7 +283,7 @@ class TestAsyncHTTPClientRateLimit:
         )
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     # -- async retries on 429 then succeeds ---------------------------------
 
