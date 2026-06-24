@@ -28,9 +28,7 @@ def test_process_payment_async():
     mock_response = {"id": "pay_002", "status": "ok"}
 
     with patch.object(gateway._async_http, "request", new_callable=AsyncMock, return_value=mock_response) as mock_req:
-        result = asyncio.get_event_loop().run_until_complete(
-            gateway.process_payment_async(50.0, "EUR")
-        )
+        result = asyncio.run(gateway.process_payment_async(50.0, "EUR"))
 
     assert result == mock_response
     mock_req.assert_called_once_with(
