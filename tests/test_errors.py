@@ -4,6 +4,7 @@ from shade import (
     InvalidRequestError,
     NetworkError,
     NotFoundError,
+    RateLimitError,
     ShadeError,
 )
 
@@ -35,6 +36,7 @@ def test_specific_errors_inherit_from_shade_error():
         InvalidRequestError,
         NetworkError,
         NotFoundError,
+        RateLimitError,
     ):
         error = error_type("request failed", status_code=400, response_body="raw")
 
@@ -43,12 +45,28 @@ def test_specific_errors_inherit_from_shade_error():
         assert error.response_body == "raw"
 
 
+def test_rate_limit_error_retry_after_from_header():
+    error = RateLimitError("too many requests", retry_after=30)
+
+    assert isinstance(error, ShadeError)
+    assert error.retry_after == 30
+    assert error.status_code == 429
+
+
+def test_rate_limit_error_retry_after_none_when_absent():
+    error = RateLimitError("too many requests")
+
+    assert error.retry_after is None
+    assert error.status_code == 429
+
+
 def test_package_root_exports_error_classes():
     assert shade.ShadeError is ShadeError
     assert shade.AuthenticationError is AuthenticationError
     assert shade.InvalidRequestError is InvalidRequestError
     assert shade.NetworkError is NetworkError
     assert shade.NotFoundError is NotFoundError
+    assert shade.RateLimitError is RateLimitError
 
 
 def test_not_found_error_is_shade_error():
