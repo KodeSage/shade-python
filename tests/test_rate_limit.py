@@ -24,7 +24,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from shade import RateLimitError
-from shade.errors import HTTPError
+from shade.errors import HTTPError, InvalidRequestError, NetworkError
 from shade.http import (
     DEFAULT_MAX_RETRIES,
     AsyncHTTPClient,
@@ -266,6 +266,67 @@ class TestSyncHTTPClientRateLimit:
                 client.request("POST", "/payments", {})
 
         assert exc_info.value.retry_after is None
+
+    def test_retries_on_transient_5xx_then_succeeds(self):
+        client = self._client(max_retries=2)
+        responses = [
+            (503, {}, b"{}"),
+            (503, {}, b"{}"),
+            (200, {}, _fake_200_body()),
+        ]
+        idx = 0
+
+        def fake_execute(req):
+            nonlocal idx
+            status, headers, body = responses[idx]
+            idx += 1
+            return status, headers, body
+
+        sleep_calls: List[float] = []
+        with patch.object(client, "_execute", side_effect=fake_execute), \
+             patch("time.sleep", side_effect=lambda s: sleep_calls.append(s)), \
+             patch("shade.http.random.uniform", side_effect=[0.0, 0.0]):
+            result = client.request("GET", "/payments")
+
+        assert result == {"id": "pay_123", "status": "ok"}
+        assert sleep_calls == [1.0, 2.0]
+
+    def test_400_raises_invalid_request_error_immediately(self):
+        client = self._client(max_retries=3)
+
+        def fake_execute(req):
+            return 400, {}, b'{"error": {"message": "bad request"}}'
+
+        with patch.object(client, "_execute", side_effect=fake_execute), \
+             patch("time.sleep") as mock_sleep:
+            with pytest.raises(InvalidRequestError) as exc_info:
+                client.request("GET", "/payments")
+
+        mock_sleep.assert_not_called()
+        assert exc_info.value.status_code == 400
+
+    def test_retries_exhausted_raise_network_error(self):
+        client = self._client(max_retries=1)
+        responses = [
+            (503, {}, b"{}"),
+            (503, {}, b"{}"),
+            (503, {}, b"{}"),
+        ]
+        idx = 0
+
+        def fake_execute(req):
+            nonlocal idx
+            status, headers, body = responses[idx]
+            idx += 1
+            return status, headers, body
+
+        with patch.object(client, "_execute", side_effect=fake_execute), \
+             patch("time.sleep") as mock_sleep:
+            with pytest.raises(NetworkError) as exc_info:
+                client.request("GET", "/payments")
+
+        assert exc_info.value.status_code == 503
+        assert mock_sleep.call_count == 1
 
 
 # ---------------------------------------------------------------------------
