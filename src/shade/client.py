@@ -47,7 +47,8 @@ class ShadeClient:
         json: Any = None,
         content: Optional[bytes] = None,
     ) -> httpx.Response:
-        url = f"{self.base_url}{path}"
+        normalized_path = path if path.startswith("/") else f"/{path}"
+        url = f"{self.base_url}{normalized_path}"
         request_headers = {**self._default_headers(), **(headers or {})}
 
         if self._should_debug():
