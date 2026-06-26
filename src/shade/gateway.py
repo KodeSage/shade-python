@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from . import config as _config
+from .config import Environment
 from .http import AsyncHTTPClient, SyncHTTPClient, DEFAULT_MAX_RETRIES
 
 
@@ -13,8 +15,16 @@ class Gateway:
     ----------
     api_key : str
         Your Shade API key.
+    environment : Environment
+        Controls the Stellar network passphrase and the default API URL.
+        Defaults to ``Environment.MAINNET``.
+    api_base : str, optional
+        Override the API host for this client (useful for local dev or staging).
+        Takes precedence over the module-level ``shade.api_base`` and the
+        URL derived from ``environment``. Trailing slashes are trimmed.
+        Intended for development and testing only.
     base_url : str
-        Override the default API base URL (useful for testing).
+        Deprecated. Prefer ``api_base``.
     max_retries : int
         Number of automatic retries on HTTP 429.  Defaults to
         ``DEFAULT_MAX_RETRIES`` (3).  Set to ``0`` to disable.
@@ -22,11 +32,11 @@ class Gateway:
         Per-request socket timeout in seconds.
     """
 
-    _DEFAULT_BASE_URL = "https://api.shadeprotocol.io/v1"
-
     def __init__(
         self,
         api_key: str = "",
+        environment: Environment = Environment.MAINNET,
+        api_base: Optional[str] = None,
         base_url: str = "",
         max_retries: int = DEFAULT_MAX_RETRIES,
         timeout: float = 30.0,
@@ -34,7 +44,13 @@ class Gateway:
         if not api_key:
             raise ValueError("api_key must be a non-empty string")
         self.api_key = api_key
-        self._base_url = base_url or self._DEFAULT_BASE_URL
+        self.environment = environment
+
+        # Resolution order: explicit api_base > module-level shade.api_base
+        # > legacy base_url > environment URL
+        resolved = api_base or _config.api_base or base_url or environment.base_url
+        self._base_url = resolved.rstrip("/")
+
         self._http = SyncHTTPClient(
             base_url=self._base_url,
             api_key=api_key,
