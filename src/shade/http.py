@@ -87,6 +87,23 @@ def _is_retryable_transport_error(exc: Exception) -> bool:
     """Return True for transient network failures that should be retried."""
     if httpx is not None and isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
         return True
+
+    try:
+        import aiohttp
+    except ImportError:
+        aiohttp = None
+
+    if aiohttp is not None and isinstance(
+        exc,
+        (
+            aiohttp.ClientConnectionError,
+            aiohttp.ClientConnectorError,
+            aiohttp.ClientOSError,
+            aiohttp.ServerDisconnectedError,
+        ),
+    ):
+        return True
+
     if isinstance(exc, (ConnectionResetError, TimeoutError, urllib.error.URLError)):
         return True
     return False
@@ -180,7 +197,12 @@ def _raise_for_status(
         raise AuthenticationError("Authentication failed", status_code=status)
 
     if status == 404:
-        raise NotFoundError("Resource not found", status_code=status)
+        response_body = body.decode("utf-8", errors="replace")
+        raise NotFoundError(
+            "Resource not found",
+            status_code=status,
+            response_body=response_body,
+        )
 
     if status in {502, 503, 504}:
         if attempt < max_retries:
