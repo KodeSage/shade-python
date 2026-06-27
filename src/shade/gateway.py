@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from . import config as _config
-from .config import Environment
-from .http import AsyncHTTPClient, SyncHTTPClient, DEFAULT_MAX_RETRIES
+from .config import Environment, validate_client_settings
+from .http import AsyncHTTPClient, SyncHTTPClient
 
 
 class Gateway:
@@ -25,11 +25,13 @@ class Gateway:
         Intended for development and testing only.
     base_url : str
         Deprecated. Prefer ``api_base``.
-    max_retries : int
-        Number of automatic retries on HTTP 429.  Defaults to
-        ``DEFAULT_MAX_RETRIES`` (3).  Set to ``0`` to disable.
-    timeout : float
-        Per-request socket timeout in seconds.
+    max_retries : int, optional
+        Number of automatic retries on HTTP 429 and transient failures.
+        Defaults to the module-level ``shade.max_retries`` (3).  Set to ``0``
+        to disable auto-retry.
+    timeout : float, optional
+        Per-request socket timeout in seconds.  Defaults to the module-level
+        ``shade.timeout`` (30.0).
     """
 
     def __init__(
@@ -38,13 +40,19 @@ class Gateway:
         environment: Environment = Environment.MAINNET,
         api_base: Optional[str] = None,
         base_url: str = "",
-        max_retries: int = DEFAULT_MAX_RETRIES,
-        timeout: float = 30.0,
+        max_retries: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         if not api_key:
             raise ValueError("api_key must be a non-empty string")
         self.api_key = api_key
         self.environment = environment
+
+        resolved_max_retries = (
+            _config.max_retries if max_retries is None else max_retries
+        )
+        resolved_timeout = _config.timeout if timeout is None else timeout
+        validate_client_settings(resolved_timeout, resolved_max_retries)
 
         # Resolution order: explicit api_base > module-level shade.api_base
         # > legacy base_url > environment URL
@@ -54,14 +62,14 @@ class Gateway:
         self._http = SyncHTTPClient(
             base_url=self._base_url,
             api_key=api_key,
-            max_retries=max_retries,
-            timeout=timeout,
+            max_retries=resolved_max_retries,
+            timeout=resolved_timeout,
         )
         self._async_http = AsyncHTTPClient(
             base_url=self._base_url,
             api_key=api_key,
-            max_retries=max_retries,
-            timeout=timeout,
+            max_retries=resolved_max_retries,
+            timeout=resolved_timeout,
         )
 
     # ------------------------------------------------------------------

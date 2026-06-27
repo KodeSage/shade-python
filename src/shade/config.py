@@ -9,6 +9,25 @@ from stellar_sdk import Network
 # Set this before creating any client to route all requests to a custom host.
 api_base: Optional[str] = None
 
+# Default HTTP client settings. Override via ``shade.timeout`` / ``shade.max_retries``
+# or per-client constructor arguments on ``ShadeClient`` / ``Gateway``.
+DEFAULT_TIMEOUT: float = 30.0
+DEFAULT_MAX_RETRIES: int = 3
+MAX_RETRIES_LIMIT: int = 10
+
+timeout: float = DEFAULT_TIMEOUT
+max_retries: int = DEFAULT_MAX_RETRIES
+
+
+def validate_client_settings(timeout: float, max_retries: int) -> None:
+    """Raise ValueError for out-of-range timeout or retry settings."""
+    if timeout <= 0:
+        raise ValueError(f"timeout must be greater than 0, got {timeout!r}")
+    if max_retries < 0 or max_retries > MAX_RETRIES_LIMIT:
+        raise ValueError(
+            f"max_retries must be between 0 and {MAX_RETRIES_LIMIT}, got {max_retries!r}"
+        )
+
 
 class Environment(str, Enum):
     MAINNET = "mainnet"
