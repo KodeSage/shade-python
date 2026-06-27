@@ -74,7 +74,22 @@ class AuthenticationError(ShadeError):
 
 
 class InvalidRequestError(ShadeError):
-    """Raised when a request is malformed or rejected by validation."""
+    """Raised when a request is malformed or rejected by validation.
+
+    Attributes:
+        field_errors: Field-level validation errors extracted from the response
+            body, if the API provided them. ``None`` when absent.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        response_body: Optional[str] = None,
+        field_errors: Optional[object] = None,
+    ) -> None:
+        super().__init__(message, status_code, response_body)
+        self.field_errors = field_errors
 
 
 class NotFoundError(ShadeError):
