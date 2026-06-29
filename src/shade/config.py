@@ -5,19 +5,40 @@ from typing import Optional
 
 from stellar_sdk import Network
 
-# Module-level API base URL override. Intended for development and testing only.
-# Set this before creating any client to route all requests to a custom host.
-api_base: Optional[str] = None
+class Config:
+    """Global SDK configuration."""
+
+    def __init__(self):
+        self.debug: bool = False
+        self._api_base: Optional[str] = None
+        self.timeout: float = DEFAULT_TIMEOUT
+        self.max_retries: int = DEFAULT_MAX_RETRIES
+        self.environment: Environment = Environment.SANDBOX
+
+    @property
+    def api_base(self) -> Optional[str]:
+        return self._api_base
+
+    @api_base.setter
+    def api_base(self, value: Optional[str]) -> None:
+        self._api_base = value
+
+    def parse_environment(self, value: str | Environment) -> Environment:
+        if isinstance(value, Environment):
+            return value
+        if isinstance(value, str):
+            try:
+                return Environment(value.lower())
+            except ValueError:
+                pass
+        raise ValueError("Invalid environment. Valid options are: 'sandbox', 'production'")
+
 
 # Default HTTP client settings. Override via ``shade.timeout`` / ``shade.max_retries``
 # or per-client constructor arguments on ``ShadeClient`` / ``Gateway``.
 DEFAULT_TIMEOUT: float = 30.0
 DEFAULT_MAX_RETRIES: int = 3
 MAX_RETRIES_LIMIT: int = 10
-
-timeout: float = DEFAULT_TIMEOUT
-max_retries: int = DEFAULT_MAX_RETRIES
-
 
 def validate_client_settings(timeout: float, max_retries: int) -> None:
     """Raise ValueError for out-of-range timeout or retry settings."""
@@ -57,15 +78,4 @@ class Environment(str, Enum):
         }
         return _horizons[self.value]
 
-
-def parse_environment(value: str | Environment) -> Environment:
-    if isinstance(value, Environment):
-        return value
-    if isinstance(value, str):
-        try:
-            return Environment(value.lower())
-        except ValueError:
-            pass
-    raise ValueError("Invalid environment. Valid options are: 'sandbox', 'production'")
-
-environment: Environment = Environment.SANDBOX
+config = Config()

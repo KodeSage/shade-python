@@ -2,7 +2,8 @@ import sys
 from types import ModuleType
 from typing import Optional
 
-from .config import Environment
+from .client import ShadeClient
+from .config import config, Environment
 from .gateway import Gateway
 from .http import AsyncHTTPClient, SyncHTTPClient
 from .errors import (
@@ -33,6 +34,7 @@ __all__ = [
     "ShadeClient",
     "ShadeError",
     "SyncHTTPClient",
+    "config",
     "api_base",
     "environment",
     "max_retries",
