@@ -30,21 +30,42 @@ def validate_client_settings(timeout: float, max_retries: int) -> None:
 
 
 class Environment(str, Enum):
-    MAINNET = "mainnet"
-    TESTNET = "testnet"
+    SANDBOX = "sandbox"
+    PRODUCTION = "production"
 
     @property
     def base_url(self) -> str:
         _urls: dict[str, str] = {
-            "mainnet": "https://api.shadeprotocol.io/v1",
-            "testnet": "https://testnet.api.shadeprotocol.io/v1",
+            "sandbox": "https://testnet.api.shadeprotocol.io/v1",
+            "production": "https://api.shadeprotocol.io/v1",
         }
         return _urls[self.value]
 
     @property
     def network_passphrase(self) -> str:
         _passphrases: dict[str, str] = {
-            "mainnet": Network.PUBLIC_NETWORK_PASSPHRASE,
-            "testnet": Network.TESTNET_NETWORK_PASSPHRASE,
+            "sandbox": Network.TESTNET_NETWORK_PASSPHRASE,
+            "production": Network.PUBLIC_NETWORK_PASSPHRASE,
         }
         return _passphrases[self.value]
+
+    @property
+    def horizon_url(self) -> str:
+        _horizons: dict[str, str] = {
+            "sandbox": "https://horizon-testnet.stellar.org",
+            "production": "https://horizon.stellar.org",
+        }
+        return _horizons[self.value]
+
+
+def parse_environment(value: str | Environment) -> Environment:
+    if isinstance(value, Environment):
+        return value
+    if isinstance(value, str):
+        try:
+            return Environment(value.lower())
+        except ValueError:
+            pass
+    raise ValueError("Invalid environment. Valid options are: 'sandbox', 'production'")
+
+environment: Environment = Environment.SANDBOX

@@ -34,10 +34,10 @@ __all__ = [
     "ShadeError",
     "SyncHTTPClient",
     "api_base",
+    "environment",
     "max_retries",
     "timeout",
 ]
-
 
 class _ShadeModule(ModuleType):
     """Module subclass that exposes config-backed attributes on the shade package."""
@@ -71,6 +71,16 @@ class _ShadeModule(ModuleType):
     def max_retries(self, value: int) -> None:
         from . import config as _config
         _config.max_retries = value
+
+    @property
+    def environment(self) -> Environment:
+        from . import config as _config
+        return _config.environment
+
+    @environment.setter
+    def environment(self, value: str | Environment) -> None:
+        from . import config as _config
+        _config.environment = _config.parse_environment(value)
 
 
 sys.modules[__name__].__class__ = _ShadeModule
