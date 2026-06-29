@@ -19,6 +19,8 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, Optional, Tuple
 
+from .config import DEFAULT_MAX_RETRIES, validate_client_settings
+from . import config as _config
 from .errors import (
     AuthenticationError,
     HTTPError,
@@ -39,7 +41,6 @@ except ImportError:  # pragma: no cover - optional dependency
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_MAX_RETRIES: int = 3
 _BASE_BACKOFF: float = 1.0   # seconds for exponential back-off base
 _MAX_BACKOFF: float = 60.0   # cap individual wait at 60 s
 
@@ -248,14 +249,15 @@ class SyncHTTPClient:
         self,
         base_url: str,
         api_key: str,
-        max_retries: int = DEFAULT_MAX_RETRIES,
-        timeout: float = 30.0,
+        max_retries: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         _validate_base_url(base_url)
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
-        self.max_retries = max_retries
-        self.timeout = timeout
+        self.max_retries = _config.max_retries if max_retries is None else max_retries
+        self.timeout = _config.timeout if timeout is None else timeout
+        validate_client_settings(self.timeout, self.max_retries)
 
     def _build_request(
         self, method: str, path: str, payload: Optional[Dict[str, Any]]
@@ -347,14 +349,15 @@ class AsyncHTTPClient:
         self,
         base_url: str,
         api_key: str,
-        max_retries: int = DEFAULT_MAX_RETRIES,
-        timeout: float = 30.0,
+        max_retries: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         _validate_base_url(base_url)
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
-        self.max_retries = max_retries
-        self.timeout = timeout
+        self.max_retries = _config.max_retries if max_retries is None else max_retries
+        self.timeout = _config.timeout if timeout is None else timeout
+        validate_client_settings(self.timeout, self.max_retries)
 
     async def request(
         self,
