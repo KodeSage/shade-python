@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import httpx
 from typing import Any, Dict, Optional
 
 from . import config as _config
+from .client import ShadeClient as ClientShadeClient
 from .config import Environment
 from .http import AsyncHTTPClient, SyncHTTPClient, DEFAULT_MAX_RETRIES
 
@@ -40,6 +42,8 @@ class Gateway:
         base_url: str = "",
         max_retries: int = DEFAULT_MAX_RETRIES,
         timeout: float = 30.0,
+        debug: bool = False,
+        http_client: Optional[httpx.Client] = None,
     ) -> None:
         if not api_key:
             raise ValueError("api_key must be a non-empty string")
@@ -64,9 +68,42 @@ class Gateway:
             timeout=timeout,
         )
 
+        self._client = ClientShadeClient(
+            api_key=api_key,
+            base_url=self._base_url,
+            debug=debug,
+            http_client=http_client,
+        )
+
     # ------------------------------------------------------------------
     # Sync API
     # ------------------------------------------------------------------
+
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> "Gateway":
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        headers: Optional[Dict[str, str]] = None,
+        json: Any = None,
+        content: Optional[bytes] = None,
+    ) -> httpx.Response:
+        return self._client.request(
+            method,
+            path,
+            headers=headers,
+            json=json,
+            content=content,
+        )
 
     def process_payment(self, amount: float, currency: str) -> Dict[str, Any]:
         """

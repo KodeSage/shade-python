@@ -14,6 +14,14 @@ class Config:
 
     debug: bool = False
 
+    @property
+    def api_base(self) -> Optional[str]:
+        return globals()["api_base"]
+
+    @api_base.setter
+    def api_base(self, value: Optional[str]) -> None:
+        globals()["api_base"] = value
+
 
 class Environment(str, Enum):
     MAINNET = "mainnet"
