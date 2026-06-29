@@ -15,9 +15,9 @@ class Gateway:
     ----------
     api_key : str
         Your Shade API key.
-    environment : Environment
+    environment : str | Environment, optional
         Controls the Stellar network passphrase and the default API URL.
-        Defaults to ``Environment.MAINNET``.
+        Defaults to the module-level ``shade.environment`` (``Environment.SANDBOX``).
     api_base : str, optional
         Override the API host for this client (useful for local dev or staging).
         Takes precedence over the module-level ``shade.api_base`` and the
@@ -37,7 +37,7 @@ class Gateway:
     def __init__(
         self,
         api_key: str = "",
-        environment: Environment = Environment.MAINNET,
+        environment: Optional[Environment | str] = None,
         api_base: Optional[str] = None,
         base_url: str = "",
         max_retries: Optional[int] = None,
@@ -46,7 +46,11 @@ class Gateway:
         if not api_key:
             raise ValueError("api_key must be a non-empty string")
         self.api_key = api_key
-        self.environment = environment
+        
+        if environment is not None:
+            self.environment = _config.parse_environment(environment)
+        else:
+            self.environment = _config.environment
 
         resolved_max_retries = (
             _config.max_retries if max_retries is None else max_retries
@@ -56,9 +60,8 @@ class Gateway:
 
         # Resolution order: explicit api_base > module-level shade.api_base
         # > legacy base_url > environment URL
-        resolved = api_base or _config.api_base or base_url or environment.base_url
+        resolved = api_base or _config.api_base or base_url or self.environment.base_url
         self._base_url = resolved.rstrip("/")
-
         self._http = SyncHTTPClient(
             base_url=self._base_url,
             api_key=api_key,
